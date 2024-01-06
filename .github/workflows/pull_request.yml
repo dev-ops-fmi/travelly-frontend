@@ -29,7 +29,7 @@ jobs:
         run: |
           npm install -g sonarqube-scanner
           sonar-scanner \
-            -Dsonar.projectKey=travelly-frontend \
+            -Dsonar.projectKey=dev-ops-fmi:travelly-frontend \
             -Dsonar.organization=dev-ops-fmi \
             -Dsonar.sources=src \
             -Dsonar.host.url=https://sonarcloud.io \
