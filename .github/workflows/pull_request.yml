@@ -20,6 +20,9 @@ jobs:
         with:
           node-version: '16.13'
 
+      - name: Update Angular CLI
+        run: npm install -g @angular/cli@latest
+
       - name: Install Dependencies
         run: npm install
 
