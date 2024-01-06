@@ -1,0 +1,39 @@
+name: Frontend Pull Request
+
+on:
+  pull_request:
+    branches:
+      - '*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+        with:
+          node-version: '14'
+
+      - name: Set Up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '14'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build and Test
+        run: npm run build --prod
+
+      - name: SonarQube Scan
+        run: |
+          npm install -g sonarqube-scanner
+          sonar-scanner \
+            -Dsonar.projectKey=travelly-frontend \
+            -Dsonar.organization=dev-ops-fmi \
+            -Dsonar.sources=src \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.login=$SONAR_TOKEN
+        env:
+          SONAR_TOKEN_ANGULAR: ${{ secrets.SONAR_TOKEN }}
