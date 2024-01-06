@@ -36,4 +36,3 @@ jobs:
             -Dsonar.login=$SONAR_TOKEN
         env:
           SONAR_TOKEN_ANGULAR: ${{ secrets.SONAR_TOKEN }}
-
