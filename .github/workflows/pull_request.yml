@@ -6,8 +6,37 @@ on:
       - '*'
 
 jobs:
-  build:
+
+  git-leaks-check:
     runs-on: ubuntu-latest
+
+    outputs:
+      status: ${{ steps.set-status.outputs.status }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.before }}
+          fetch-depth: 0 # Fetch all history for all tags and branches
+
+      - name: Git Leaks Check
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.DEVOPS_GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+
+      - name: Set Status
+        id: set-status
+        run: echo "::set-output name=status::${{ job.status }}"
+
+
+  build:
+    needs: git-leaks-check
+    runs-on: ubuntu-latest
+
+    outputs:
+      status: ${{ steps.set-status.outputs.status }}
 
     steps:
       - name: Checkout Repository
@@ -25,6 +54,22 @@ jobs:
       - name: Build and Test
         run: npm run build --prod
 
+      - name: Set Status
+        id: set-status
+        run: echo "::set-output name=status::${{ job.status }}"
+
+
+  sonar:
+    needs: build
+    runs-on: ubuntu-latest
+
+    outputs:
+      status: ${{ steps.set-status.outputs.status }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
       - name: SonarQube Scan
         run: |
           npm install -g sonarqube-scanner
@@ -35,4 +80,27 @@ jobs:
             -Dsonar.host.url=https://sonarcloud.io \
             -Dsonar.login=$SONAR_TOKEN
         env:
-          SONAR_TOKEN_ANGULAR: ${{ secrets.SONAR_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: Set Status
+        id: set-status
+        run: echo "::set-output name=status::${{ job.status }}"
+
+
+  slack-notify:
+    needs: [ git-leaks-check, build, sonar]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Slack Notification
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_CHANNEL: pipelines
+          SLACK_ICON: https://github.com/rtCamp.png?size=48
+          SLACK_MESSAGE: |
+            Pull Request Status:
+            - Git Leaks Check: ${{ needs.git-leaks-check.outputs.status }}
+            - Build: ${{ needs.build.outputs.status }}
+            - Static Code Analysis: ${{ needs.sonar.outputs.status }}
+          SLACK_USERNAME: rtCamp
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
