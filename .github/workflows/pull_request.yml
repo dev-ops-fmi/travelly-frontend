@@ -104,3 +104,4 @@ jobs:
             - Static Code Analysis: ${{ needs.sonar.outputs.status }}
           SLACK_USERNAME: rtCamp
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+
